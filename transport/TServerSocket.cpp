@@ -110,6 +110,7 @@ TServerSocket::TServerSocket(string path) :
   acceptBacklog_(1024),
   sendTimeout_(0),
   recvTimeout_(0),
+  accTimeout_(-1),
   retryLimit_(0),
   retryDelay_(0),
   tcpSendBuffer_(0),
@@ -309,14 +310,14 @@ void TServerSocket::listen() {
     len = sizeof(address);
 
     do {
-      if (0 == bind(serverSocket_, (struct sockaddr *) &address, len)) {
+      if (0 == ::bind(serverSocket_, (struct sockaddr *) &address, len)) {
         break;
       }
       // use short circuit evaluation here to only sleep if we need to
     } while ((retries++ < retryLimit_) && (sleep(retryDelay_) == 0));
   } else {
     do {
-      if (0 == bind(serverSocket_, res->ai_addr, res->ai_addrlen)) {
+      if (0 == ::bind(serverSocket_, res->ai_addr, res->ai_addrlen)) {
         break;
       }
       // use short circuit evaluation here to only sleep if we need to

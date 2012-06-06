@@ -42,14 +42,8 @@ void TSimpleServer::serve() {
   shared_ptr<TProtocol> inputProtocol;
   shared_ptr<TProtocol> outputProtocol;
 
-  try {
-    // Start the server listening
-    serverTransport_->listen();
-  } catch (TTransportException& ttx) {
-    string errStr = string("TSimpleServer::run() listen(): ") + ttx.what();
-    GlobalOutput(errStr.c_str());
-    return;
-  }
+  // Start the server listening
+  serverTransport_->listen();
 
   // Run the preServe event
   if (eventHandler_ != NULL) {
@@ -68,8 +62,10 @@ void TSimpleServer::serve() {
       if (inputTransport != NULL) { inputTransport->close(); }
       if (outputTransport != NULL) { outputTransport->close(); }
       if (client != NULL) { client->close(); }
-      string errStr = string("TServerTransport died on accept: ") + ttx.what();
-      GlobalOutput(errStr.c_str());
+      if (!stop_ || ttx.getType() != TTransportException::INTERRUPTED) {
+          string errStr = string("TServerTransport died on accept: ") + ttx.what();
+          GlobalOutput(errStr.c_str());
+      }
       continue;
     } catch (TException& tx) {
       if (inputTransport != NULL) { inputTransport->close(); }

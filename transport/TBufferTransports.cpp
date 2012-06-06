@@ -34,7 +34,7 @@ uint32_t TBufferedTransport::readSlow(uint8_t* buf, uint32_t len) {
   // with the data already in the buffer.
   assert(have < len);
 
-  // If we have some date in the buffer, copy it out and return it.
+  // If we have some data in the buffer, copy it out and return it.
   // We have to return it without attempting to read more, since we aren't
   // guaranteed that the underlying transport actually has more data, so
   // attempting to read from it could block.
@@ -140,11 +140,14 @@ uint32_t TFramedTransport::readSlow(uint8_t* buf, uint32_t len) {
   // with the data already in the buffer.
   assert(have < want);
 
-  // Copy out whatever we have.
+  // If we have some data in the buffer, copy it out and return it.
+  // We have to return it without attempting to read more, since we aren't
+  // guaranteed that the underlying transport actually has more data, so
+  // attempting to read from it could block.
   if (have > 0) {
     memcpy(buf, rBase_, have);
-    want -= have;
-    buf += have;
+    setReadBuffer(rBuf_.get(), 0);
+    return have;
   }
 
   // Read another frame.
@@ -211,6 +214,10 @@ void TFramedTransport::writeSlow(const uint8_t* buf, uint32_t len) {
   // Double buffer size until sufficient.
   uint32_t have = wBase_ - wBuf_.get();
   uint32_t new_size = wBufSize_;
+  if (len + have < have /* overflow */ || len + have > 0x7fffffff) {
+    throw TTransportException(TTransportException::BAD_ARGS,
+        "Attempted to write over 2 GB to TFramedTransport.");
+  }
   while (new_size < len + have) {
     new_size = new_size > 0 ? new_size * 2 : 1;
   }

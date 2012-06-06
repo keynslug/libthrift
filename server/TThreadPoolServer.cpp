@@ -17,6 +17,10 @@
  * under the License.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "server/TThreadPoolServer.h"
 #include "transport/TTransportException.h"
 #include "concurrency/Thread.h"
@@ -117,14 +121,8 @@ void TThreadPoolServer::serve() {
   shared_ptr<TProtocol> inputProtocol;
   shared_ptr<TProtocol> outputProtocol;
 
-  try {
-    // Start the server listening
-    serverTransport_->listen();
-  } catch (TTransportException& ttx) {
-    string errStr = string("TThreadPoolServer::run() listen(): ") + ttx.what();
-    GlobalOutput(errStr.c_str());
-    return;
-  }
+  // Start the server listening
+  serverTransport_->listen();
 
   // Run the preServe event
   if (eventHandler_ != NULL) {

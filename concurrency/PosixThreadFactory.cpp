@@ -17,6 +17,9 @@
  * under the License.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include "PosixThreadFactory.h"
 #include "Exception.h"
 
@@ -156,7 +159,13 @@ class PthreadThread: public Thread {
          cause the process to run out of thread resources.
          We're beyond the point of throwing an exception.  Not clear how
          best to handle this. */
-      detached_ = pthread_join(pthread_, &ignore) == 0;
+      int res = pthread_join(pthread_, &ignore);
+      detached_ = (res == 0);
+      if (res != 0) {
+        GlobalOutput.printf("PthreadThread::join(): fail with code %d", res);
+      }
+    } else {
+      GlobalOutput.printf("PthreadThread::join(): detached thread");
     }
   }
 
