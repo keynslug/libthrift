@@ -47,6 +47,28 @@ typedef pthread_mutex_t pthread_rwlock_t;
 
 namespace apache { namespace thrift { namespace concurrency {
 
+#ifndef HAVE_CLOCK_GETTIME
+
+#define CLOCK_REALTIME 0
+
+/**
+ * Fake clock_gettime for systems like darwin
+ */
+static int clock_gettime(int clk_id /*ignored*/, struct timespec *tp) {
+  struct timeval now;
+
+  int rv = gettimeofday(&now, NULL);
+  if (rv != 0) {
+    return rv;
+  }
+
+  tp->tv_sec = now.tv_sec;
+  tp->tv_nsec = now.tv_usec * 1000;
+  return 0;
+}
+
+#endif
+
 #ifndef THRIFT_NO_CONTENTION_PROFILING
 
 static sig_atomic_t mutexProfilingSampleRate = 0;
@@ -157,9 +179,16 @@ class Mutex::impl {
 #if defined(_POSIX_TIMEOUTS) && _POSIX_TIMEOUTS >= 200112L
     PROFILE_MUTEX_START_LOCK();
 
-    struct timespec ts;
+    struct timespec ts, now;
+    clock_gettime(CLOCK_REALTIME, &now);
     Util::toTimespec(ts, milliseconds);
-    int ret = pthread_mutex_timedlock(&pthread_mutex_, &ts);
+    now.tv_sec += ts.tv_sec;
+    now.tv_nsec += ts.tv_nsec;
+    if (now.tv_nsec > 1000000000LL) {
+      now.tv_sec += 1;
+      now.tv_nsec -= 1000000000LL;
+    }
+    int ret = pthread_mutex_timedlock(&pthread_mutex_, &now);
     if (ret == 0) {
       PROFILE_MUTEX_LOCKED();
       return true;
