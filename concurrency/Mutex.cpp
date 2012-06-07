@@ -197,9 +197,26 @@ class Mutex::impl {
     PROFILE_MUTEX_NOT_LOCKED();
     return false;
 #else
-    // If pthread_mutex_timedlock isn't supported, the safest thing to do
-    // is just do a nonblocking trylock.
-    return trylock();
+    /* Otherwise follow solution used by Mono for Android */
+    struct timeval was, now;
+    struct timespec sleepytime, to;
+
+    /* This is just to avoid a completely busy wait */
+    sleepytime.tv_sec = 0;
+    sleepytime.tv_nsec = 10000000; /* 10ms */
+
+    Util::toTimespec(to, milliseconds);
+
+    gettimeofday(&was, NULL);
+    while ((trylock()) == false) {
+      gettimeofday(&now, NULL);
+      if (now.tv_sec >= (was.tv_sec + to.tv_sec) && now.tv_usec >= (was.tv_usec + to.tv_nsec / 1000)) {
+        return false;
+      }
+      nanosleep(&sleepytime, NULL);
+    }
+ 
+    return true;
 #endif
   }
 
