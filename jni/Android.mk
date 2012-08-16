@@ -3,7 +3,7 @@
 #
 
 LOCAL_PATH := $(call my-dir)
-SRC_PATH := ..
+SRC_PATH := ../thrift
 INCLUDE_PATH := $(LOCAL_PATH)/..
 
 THRIFT_FILENAME := libthrift
@@ -33,6 +33,8 @@ THRIFT_SRC_FILES := \
     $(SRC_PATH)/transport/TSimpleFileTransport.cpp \
     $(SRC_PATH)/transport/THttpServer.cpp \
     $(SRC_PATH)/transport/TFDTransport.cpp \
+    $(SRC_PATH)/transport/TPipe.cpp \
+    $(SRC_PATH)/transport/TPipeServer.cpp \
     $(SRC_PATH)/concurrency/Util.cpp \
     $(SRC_PATH)/concurrency/PosixThreadFactory.cpp \
     $(SRC_PATH)/concurrency/TimerManager.cpp \
